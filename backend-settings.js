@@ -223,12 +223,12 @@ function showBackendSettingsDialog() {
           !isDefaultUrl ? "" : "opacity: 0.5;"
         }">
           <label for="backend-url-input">Custom Backend URL:</label>
-          <input type="text" id="backend-url-input" placeholder="https://another-backend.example.com" value="${
+          <input type="text" id="backend-url-input" placeholder="http://router.project-osrm.org" value="${
             !isDefaultUrl ? currentUrl : ""
           }">
           <div class="backend-examples">
             Examples:<br>
-            - https://osrm-api.example.com<br>
+            - http://router.project-osrm.org<br>
             - http://localhost:5000
           </div>
         </div>
