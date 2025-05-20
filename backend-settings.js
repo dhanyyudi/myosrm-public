@@ -1,59 +1,59 @@
 /**
- * Module untuk mengelola konfigurasi backend
+ * Module for managing backend configuration
  */
 
 /**
- * Inisialisasi pengaturan backend
+ * Initialize backend settings
  */
 function initBackendSettings() {
-  // Tambahkan item menu untuk backend settings
+  // Add menu item for backend settings
   addBackendSettingsMenuItem();
 
-  // Tambahkan handler untuk status koneksi
+  // Add handlers for connection status
   setupBackendStatusIndicator();
 
-  // Periksa koneksi backend
+  // Check backend connection
   checkBackendConnection();
 }
 
 /**
- * Tambahkan item menu untuk pengaturan backend
+ * Add menu item for backend settings
  */
 function addBackendSettingsMenuItem() {
-  // Dapatkan sidebar header
+  // Get sidebar header
   const sidebarHeader = document.querySelector(".sidebar-header");
 
-  // Buat tombol pengaturan
+  // Create settings button
   const settingsButton = document.createElement("button");
   settingsButton.id = "btn-backend-settings";
   settingsButton.className = "btn-header-icon";
   settingsButton.innerHTML = '<i class="fa fa-cog"></i>';
   settingsButton.title = "Backend Settings";
 
-  // Tambahkan event listener
+  // Add event listener
   settingsButton.addEventListener("click", showBackendSettingsDialog);
 
-  // Tambahkan ke sidebar header
+  // Add to sidebar header
   sidebarHeader.appendChild(settingsButton);
 
-  // Tambahkan indikator status backend
+  // Add backend status indicator
   const statusIndicator = document.createElement("div");
   statusIndicator.id = "backend-status-indicator";
   statusIndicator.className = "backend-status unknown";
   statusIndicator.title = "Backend status: Checking...";
 
-  // Tambahkan ke sidebar header
+  // Add to sidebar header
   sidebarHeader.appendChild(statusIndicator);
 }
 
 /**
- * Setup indikator status backend
+ * Set up backend status indicator
  */
 function setupBackendStatusIndicator() {
-  // Check backend status setiap 30 detik
+  // Check backend status every 30 seconds
   setInterval(checkBackendConnection, 30000);
 
-  // Tambahkan event listener untuk klik pada indikator
+  // Add event listener for clicks on the indicator
   const indicator = document.getElementById("backend-status-indicator");
   if (indicator) {
     indicator.addEventListener("click", function () {
@@ -63,7 +63,7 @@ function setupBackendStatusIndicator() {
 }
 
 /**
- * Cek koneksi ke backend
+ * Check connection to backend
  * @param {boolean} showFeedback - Whether to show feedback to user
  */
 async function checkBackendConnection(showFeedback = false) {
@@ -74,11 +74,11 @@ async function checkBackendConnection(showFeedback = false) {
   const indicator = document.getElementById("backend-status-indicator");
 
   try {
-    // Ubah ke 'checking' state
+    // Change to 'checking' state
     indicator.className = "backend-status checking";
     indicator.title = "Backend status: Checking...";
 
-    // Coba akses endpoint status backend
+    // Try to access backend status endpoint
     const url = `${CONFIG.osrmBackendUrl}/status`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -87,11 +87,11 @@ async function checkBackendConnection(showFeedback = false) {
     clearTimeout(timeoutId);
 
     if (response.ok) {
-      // Backend merespons dengan benar
+      // Backend responded correctly
       indicator.className = "backend-status connected";
       indicator.title = "Backend status: Connected";
 
-      // Ambil informasi status backend
+      // Get backend status information
       const data = await response.json();
       if (data && data.profile) {
         indicator.title = `Backend connected: ${data.profile} profile`;
@@ -103,7 +103,7 @@ async function checkBackendConnection(showFeedback = false) {
 
       return true;
     } else {
-      // Backend merespons tapi dengan error
+      // Backend responded but with an error
       indicator.className = "backend-status error";
       indicator.title = `Backend error: HTTP ${response.status}`;
 
@@ -114,7 +114,7 @@ async function checkBackendConnection(showFeedback = false) {
       return false;
     }
   } catch (error) {
-    // Tidak dapat terhubung ke backend
+    // Cannot connect to backend
     indicator.className = "backend-status disconnected";
     indicator.title = `Backend disconnected: ${error.message}`;
 
@@ -127,16 +127,16 @@ async function checkBackendConnection(showFeedback = false) {
 }
 
 /**
- * Tampilkan dialog pengaturan backend
+ * Display backend settings dialog
  */
 function showBackendSettingsDialog() {
   // Get current backend URL
   const currentUrl = CONFIG.osrmBackendUrl;
 
-  // Cek apakah menggunakan URL default
+  // Check if using default URL
   const isDefaultUrl = currentUrl === "https://api.myosrm.my.id";
 
-  // Custom CSS untuk dialog
+  // Custom CSS for dialog
   const customStyles = `
       <style>
         .backend-option {
@@ -195,7 +195,7 @@ function showBackendSettingsDialog() {
       </style>
     `;
 
-  // Buat HTML untuk dialog
+  // Create HTML for dialog
   const html = `
       ${customStyles}
       <div class="backend-options">
@@ -205,7 +205,7 @@ function showBackendSettingsDialog() {
           }>
           <div class="backend-option-content">
             <div class="backend-option-title">Default OSRM Backend (Cloudflare Tunnel)</div>
-            <div class="backend-option-desc">Gunakan OSRM backend yang dihosting di api.myosrm.my.id melalui Cloudflare Tunnel.</div>
+            <div class="backend-option-desc">Use the OSRM backend hosted at api.myosrm.my.id via Cloudflare Tunnel.</div>
           </div>
         </div>
         
@@ -215,7 +215,7 @@ function showBackendSettingsDialog() {
           }>
           <div class="backend-option-content">
             <div class="backend-option-title">Custom Backend URL</div>
-            <div class="backend-option-desc">Hubungkan ke OSRM backend di URL kustom (lokal atau remote).</div>
+            <div class="backend-option-desc">Connect to an OSRM backend at a custom URL (local or remote).</div>
           </div>
         </div>
         
@@ -234,12 +234,12 @@ function showBackendSettingsDialog() {
         </div>
         
         <div class="backend-note">
-          <i class="fa fa-info-circle"></i> Perubahan backend akan memengaruhi semua fitur routing. Backend remote membutuhkan CORS yang dikonfigurasi dengan benar.
+          <i class="fa fa-info-circle"></i> Changing the backend will affect all routing features. Remote backends require properly configured CORS.
         </div>
       </div>
     `;
 
-  // Tampilkan SweetAlert dialog
+  // Show SweetAlert dialog
   Swal.fire({
     title: "Backend Settings",
     html: html,
@@ -248,7 +248,7 @@ function showBackendSettingsDialog() {
     confirmButtonText: "Save Changes",
     cancelButtonText: "Cancel",
     didOpen: () => {
-      // Tambahkan event listener untuk radio buttons
+      // Add event listeners for radio buttons
       const defaultRadio = document.getElementById("backend-default");
       const customRadio = document.getElementById("backend-custom");
       const customContainer = document.getElementById(
@@ -276,13 +276,13 @@ function showBackendSettingsDialog() {
       } else {
         newBackendUrl = backendUrlInput.value.trim();
 
-        // Validasi URL
+        // Validate URL
         if (!newBackendUrl) {
           showError("Backend URL cannot be empty");
           return;
         }
 
-        // Pastikan URL berbentuk http:// atau https://
+        // Ensure URL starts with http:// or https://
         if (
           !newBackendUrl.startsWith("http://") &&
           !newBackendUrl.startsWith("https://")
@@ -292,10 +292,10 @@ function showBackendSettingsDialog() {
         }
       }
 
-      // Save di localStorage
+      // Save in localStorage
       localStorage.setItem("osrmBackendUrl", newBackendUrl);
 
-      // Tampilkan konfirmasi dan reload page
+      // Show confirmation and reload page
       Swal.fire({
         title: "Backend Updated",
         text: "Backend settings have been saved. The page will reload to apply changes.",
