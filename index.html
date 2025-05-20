@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OSRM Inspector</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Sidebar -->
+      <div id="sidebar">
+        <div class="sidebar-header">
+          <h1>OSRM Inspector</h1>
+        </div>
+
+        <div class="panels-container">
+          <!-- Panel Routing -->
+          <div class="panel" id="panel-routing">
+            <div class="panel-header">
+              <h2><i class="fa fa-route"></i> Routing</h2>
+            </div>
+            <div class="panel-content">
+              <div class="waypoints-container">
+                <div class="waypoint start">
+                  <div class="waypoint-icon">
+                    <i class="fa fa-map-marker-alt"></i>
+                  </div>
+                  <input
+                    type="text"
+                    id="start-point"
+                    placeholder="Start Point"
+                    class="waypoint-input"
+                  />
+                  <div class="waypoint-actions">
+                    <button class="btn btn-icon" id="btn-clear-start">
+                      <i class="fa fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="waypoint-separator">
+                  <i class="fa fa-ellipsis-v"></i>
+                </div>
+
+                <div class="waypoint end">
+                  <div class="waypoint-icon"><i class="fa fa-flag"></i></div>
+                  <input
+                    type="text"
+                    id="end-point"
+                    placeholder="End Point"
+                    class="waypoint-input"
+                  />
+                  <div class="waypoint-actions">
+                    <button class="btn btn-icon" id="btn-clear-end">
+                      <i class="fa fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Waypoint buttons will be inserted here by JavaScript -->
+
+              <div class="route-options">
+                <div class="form-group">
+                  <label for="profile">Profile:</label>
+                  <select id="profile" class="form-control">
+                    <option value="driving">Car</option>
+                    <option value="walking">Walking</option>
+                    <option value="cycling">Cycling</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="algorithm">Algorithm:</label>
+                  <select id="algorithm" class="form-control">
+                    <option value="mld">MLD (Multi-Level Dijkstra)</option>
+                    <option value="ch">CH (Contraction Hierarchies)</option>
+                  </select>
+                </div>
+
+                <!-- Auto-update toggle will be added here by JavaScript -->
+                <!-- Time selection will be added here by JavaScript -->
+                <!-- CURB options will be added here by JavaScript -->
+              </div>
+
+              <div class="action-buttons">
+                <button id="btn-find-route" class="btn btn-primary">
+                  <i class="fa fa-search"></i> Find Route
+                </button>
+                <button id="btn-clear-route" class="btn btn-secondary">
+                  <i class="fa fa-trash"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel Debug -->
+          <div class="panel" id="panel-debug">
+            <div class="panel-header">
+              <h2><i class="fa fa-bug"></i> Debug & Visualization</h2>
+            </div>
+            <div class="panel-content">
+              <div class="debug-controls">
+                <div class="debug-group">
+                  <h3>Graph Visualization</h3>
+                  <div class="toggle-buttons">
+                    <button id="btn-show-nodes" class="btn btn-toggle">
+                      <i class="fa fa-dot-circle"></i> Nodes
+                    </button>
+                    <button id="btn-show-edges" class="btn btn-toggle">
+                      <i class="fa fa-project-diagram"></i> Edges
+                    </button>
+                    <button id="btn-show-cells" class="btn btn-toggle">
+                      <i class="fa fa-th"></i> Cells
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-group">
+                  <h3>Route Debugging</h3>
+                  <div class="toggle-buttons">
+                    <button id="btn-show-turns" class="btn btn-toggle">
+                      <i class="fa fa-redo"></i> Turns
+                    </button>
+                    <button id="btn-show-speed" class="btn btn-toggle">
+                      <i class="fa fa-tachometer-alt"></i> Speed
+                    </button>
+                    <button id="btn-show-names" class="btn btn-toggle">
+                      <i class="fa fa-road"></i> Road Names
+                    </button>
+                  </div>
+                  <div class="debug-group">
+                    <h3>Routing Area</h3>
+                    <div class="toggle-buttons">
+                      <button id="btn-load-routing-area" class="btn btn-toggle">
+                        <i class="fa fa-map"></i> Load GeoJSON
+                      </button>
+                      <button
+                        id="btn-upload-routing-area"
+                        class="btn btn-toggle"
+                      >
+                        <i class="fa fa-upload"></i> Upload GeoJSON
+                      </button>
+                      <button
+                        id="btn-toggle-routing-area"
+                        class="btn btn-toggle active"
+                      >
+                        <i class="fa fa-eye"></i> Show/Hide
+                      </button>
+                    </div>
+                    <!-- Input file tersembunyi -->
+                    <input
+                      type="file"
+                      id="routing-area-file-input"
+                      accept=".geojson,.json"
+                      style="display: none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button id="btn-clear-debug" class="btn btn-secondary">
+                <i class="fa fa-broom"></i> Clear All Debug
+              </button>
+            </div>
+          </div>
+
+          <!-- Panel Results -->
+          <div class="panel" id="panel-results">
+            <div class="panel-header">
+              <h2><i class="fa fa-info-circle"></i> Route Information</h2>
+            </div>
+            <div class="panel-content">
+              <div id="route-summary">
+                <p class="no-route">No route is currently displayed.</p>
+              </div>
+
+              <!-- URL display section will be added here by JavaScript -->
+
+              <div id="route-steps">
+                <!-- Steps will be filled by JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div id="map-container">
+        <div id="map"></div>
+
+        <!-- Overlay Controls -->
+        <div class="map-controls">
+          <div class="map-control-group">
+            <button id="btn-sidebar-toggle" class="btn btn-control">
+              <i class="fa fa-bars"></i>
+            </button>
+          </div>
+          <div class="map-control-group">
+            <button id="btn-zoom-in" class="btn btn-control">
+              <i class="fa fa-plus"></i>
+            </button>
+            <button id="btn-zoom-out" class="btn btn-control">
+              <i class="fa fa-minus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Coordinates Display -->
+        <div id="coordinates-display"></div>
+
+        <div
+          id="routing-area-info"
+          class="routing-area-info"
+          style="display: none"
+        >
+          <i class="fa fa-map"></i>
+          <span
+            >Routing Area:
+            <strong id="routing-area-name">Thailand</strong></span
+          >
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading-indicator">
+          <div class="spinner"></div>
+          <span>Processing...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="sweetalert-helpers.js"></script>
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="map.js"></script>
+    <script src="routing.js"></script>
+    <script src="debug.js"></script>
+    <script src="routing-area.js"></script>
+    <script src="backend-settings.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
