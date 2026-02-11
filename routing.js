@@ -11,15 +11,37 @@ let waypointsList = [];
 // Current routing URL
 let currentRoutingUrl = "";
 
-// Mapping: display profile → OSRM API profile name
-const PROFILE_API_MAP = {
-  driving: "driving",
-  cycling: "cycling",
-  walking: "walking",
-};
+// Current selected profile
+let currentProfile = "driving";
 
+/**
+ * Get available profiles based on backend type
+ */
+function getAvailableProfiles() {
+  const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+  return isLocalBackend ? CONFIG.routing.profiles.local : CONFIG.routing.profiles.public;
+}
+
+/**
+ * Get API profile name (for public backends, all use 'driving', 'walking', or 'cycling')
+ */
 function getApiProfileName(displayProfile) {
-  return PROFILE_API_MAP[displayProfile] || "driving";
+  const profiles = getAvailableProfiles();
+  const profile = profiles.find(p => p.id === displayProfile);
+  return profile ? profile.api : "driving";
+}
+
+/**
+ * Check if current profile is valid for backend, reset if not
+ */
+function validateProfileForBackend() {
+  const profiles = getAvailableProfiles();
+  const validProfile = profiles.find(p => p.id === currentProfile);
+  if (!validProfile) {
+    // Reset to driving if current profile not available
+    currentProfile = "driving";
+    updateProfileDisplay();
+  }
 }
 
 /**
@@ -40,9 +62,11 @@ function buildIsoWithTimezone(datetimeLocalValue) {
  * Initialize routing — attach event listeners to static HTML elements
  */
 function initRouting() {
-  // Profile display from runtime config
-  document.getElementById("profile-display").textContent =
-    RUNTIME_CONFIG.displayProfile;
+  // Validate profile for current backend
+  validateProfileForBackend();
+  
+  // Profile display
+  updateProfileDisplay();
   document.getElementById("algorithm-display").textContent = "MLD";
 
   // Edit profile button
@@ -314,32 +338,106 @@ function setCurrentTimeAsDeparture() {
 }
 
 /**
- * Edit profile via SweetAlert prompt
+ * Update profile display in UI
+ */
+function updateProfileDisplay() {
+  const profileDisplay = document.getElementById("profile-display");
+  if (profileDisplay) {
+    profileDisplay.textContent = currentProfile;
+  }
+}
+
+/**
+ * Edit profile via dropdown based on available backends
  */
 function editProfile() {
-  const current = RUNTIME_CONFIG.displayProfile;
-
+  const profiles = getAvailableProfiles();
+  
+  // Build HTML for profile selection
+  let html = '<div style="text-align:left;">';
+  profiles.forEach(p => {
+    const isSelected = p.id === currentProfile;
+    html += `
+      <div class="profile-option" onclick="selectProfile('${p.id}')" 
+           style="padding:12px;border:2px solid ${isSelected ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;background:${isSelected ? 'rgba(91,159,232,0.1)' : 'transparent'};display:flex;align-items:center;gap:10px;">
+        <input type="radio" name="profile-choice" value="${p.id}" ${isSelected ? 'checked' : ''} style="cursor:pointer;">
+        <div style="flex:1;">
+          <div style="font-weight:600;color:var(--white);">${p.name}</div>
+          <div style="font-size:0.75rem;color:var(--white-50);">API: ${p.api}</div>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  // Show backend type info
+  const isLocal = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+  const backendType = isLocal ? 'Local Backend (Custom Profiles)' : 'Public Backend (Standard Profiles)';
+  
   Swal.fire({
-    title: "Change Profile",
-    input: "text",
-    inputValue: current,
-    inputPlaceholder: "e.g. truck18w, van, driving",
+    title: `Select Profile`,
+    html: html + `<div style="margin-top:12px;font-size:0.75rem;color:var(--white-50);text-align:center;">${backendType}</div>`,
     showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+    didOpen: () => {
+      // Add hover effects
+      document.querySelectorAll('.profile-option').forEach(el => {
+        el.addEventListener('mouseenter', function() {
+          if (!this.querySelector('input').checked) {
+            this.style.borderColor = 'var(--glass-border-strong)';
+            this.style.background = 'var(--white-08)';
+          }
+        });
+        el.addEventListener('mouseleave', function() {
+          if (!this.querySelector('input').checked) {
+            this.style.borderColor = 'var(--glass-border)';
+            this.style.background = 'transparent';
+          }
+        });
+      });
+    },
+    preConfirm: () => {
+      const selected = document.querySelector('input[name="profile-choice"]:checked');
+      return selected ? selected.value : null;
+    }
   }).then((result) => {
     if (result.isConfirmed && result.value) {
-      const newProfile = result.value.trim();
-      RUNTIME_CONFIG.displayProfile = newProfile;
-      document.getElementById("profile-display").textContent = newProfile;
-      showToast("Profile updated to " + newProfile, "success");
+      selectProfile(result.value);
+    }
+  });
+}
 
-      // Auto-refresh route if exists
-      if (
-        currentRouteData &&
-        document.getElementById("auto-update-route") &&
-        document.getElementById("auto-update-route").checked
-      ) {
-        findRouteWithMultipleWaypoints();
-      }
+/**
+ * Select a profile
+ */
+function selectProfile(profileId) {
+  if (profileId === currentProfile) return;
+  
+  currentProfile = profileId;
+  updateProfileDisplay();
+  showToast("Profile updated to " + profileId, "success");
+
+  // Auto-refresh route if exists
+  if (
+    currentRouteData &&
+    document.getElementById("auto-update-route") &&
+    document.getElementById("auto-update-route").checked
+  ) {
+    findRouteWithMultipleWaypoints();
+  }
+  
+  // Update selection visual
+  document.querySelectorAll('.profile-option').forEach(el => {
+    const input = el.querySelector('input');
+    if (input.value === profileId) {
+      el.style.borderColor = 'var(--accent)';
+      el.style.background = 'rgba(91,159,232,0.1)';
+      input.checked = true;
+    } else {
+      el.style.borderColor = 'var(--glass-border)';
+      el.style.background = 'transparent';
+      input.checked = false;
     }
   });
 }
@@ -597,8 +695,7 @@ async function findRouteWithMultipleWaypoints() {
   showLoading();
 
   try {
-    const displayProfile = RUNTIME_CONFIG.displayProfile;
-    const profile = getApiProfileName(displayProfile);
+    const profile = getApiProfileName(currentProfile);
     const waypointsString = waypointsList.join(";");
 
     // Check if TD is enabled
@@ -631,7 +728,28 @@ async function findRouteWithMultipleWaypoints() {
     try {
       response = await fetch(url);
     } catch (fetchError) {
+      // Check if it's a local backend that's not running
+      const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+      if (isLocalBackend) {
+        throw new Error(
+          `Local backend not available at ${CONFIG.osrmBackendUrl}. ` +
+          `Please start your local OSRM server or switch to Public Backend in Settings.`
+        );
+      }
       throw new Error(`Network error: ${fetchError.message}`);
+    }
+    
+    // Check if response is HTML error page (not JSON)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/html')) {
+      const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+      if (isLocalBackend) {
+        throw new Error(
+          `Local backend not responding. ` +
+          `Please ensure your OSRM server is running or switch to Public Backend in Settings.`
+        );
+      }
+      throw new Error('Backend returned HTML instead of JSON. Please check backend URL.');
     }
 
     // If profile fails, try alternatives
@@ -659,7 +777,7 @@ async function findRouteWithMultipleWaypoints() {
             currentRoutingUrl = `http://localhost:9966${altUrl}`;
             updateRoutingUrlDisplay();
             currentRouteData = data;
-            displayRoute(data, displayProfile);
+            displayRoute(data, currentProfile);
             displayRouteSummary(data.routes[0], timeEnabled);
             displayRouteSteps(data.routes[0]);
             displayWaypointsTab();
@@ -680,7 +798,20 @@ async function findRouteWithMultipleWaypoints() {
     if (!response.ok)
       throw new Error(`HTTP error! Status: ${response.status}`);
 
-    let data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+      if (isLocalBackend) {
+        throw new Error(
+          `Local backend returned invalid response. ` +
+          `Please ensure OSRM server is running at ${CONFIG.osrmBackendUrl} or switch to Public Backend.`
+        );
+      }
+      throw new Error('Backend returned invalid JSON. Please check backend URL.');
+    }
+    
     if (data.code !== "Ok" || !data.routes || !data.routes.length)
       throw new Error("Route not found");
 
@@ -692,7 +823,7 @@ async function findRouteWithMultipleWaypoints() {
     }
 
     currentRouteData = data;
-    displayRoute(data, displayProfile);
+    displayRoute(data, currentProfile);
     displayRouteSummary(data.routes[0], timeEnabled);
     displayRouteSteps(data.routes[0]);
     displayWaypointsTab();

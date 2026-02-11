@@ -5,15 +5,15 @@
 
 // Default backends
 const DEFAULT_BACKENDS = {
+  public: {
+    name: "OSRM Public Demo (Default)",
+    url: "https://router.project-osrm.org",
+    description: "Public OSRM demo server - works immediately",
+  },
   local: {
     name: "Local OSRM (Podman)",
     url: "/api",
     description: "Local OSRM instance running via Podman",
-  },
-  public: {
-    name: "OSRM Public Demo",
-    url: "https://router.project-osrm.org",
-    description: "Public OSRM demo server (rate limited)",
   },
 };
 
@@ -51,23 +51,12 @@ function resetBackendUrl() {
  */
 function showBackendSettings() {
   const currentUrl = getBackendUrl();
-  const isDefaultLocal = currentUrl === DEFAULT_BACKENDS.local.url;
   const isDefaultPublic = currentUrl === DEFAULT_BACKENDS.public.url;
+  const isDefaultLocal = currentUrl === DEFAULT_BACKENDS.local.url;
   const isCustom = !isDefaultLocal && !isDefaultPublic;
 
   const html = `
     <div style="text-align:left;">
-      <div class="backend-option" onclick="selectBackendOption('local')" id="backend-opt-local"
-           style="padding:14px;border:2px solid ${isDefaultLocal ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;background:${isDefaultLocal ? 'rgba(91,159,232,0.1)' : 'transparent'};">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="radio" name="backend-choice" value="local" ${isDefaultLocal ? 'checked' : ''} style="cursor:pointer;">
-          <div style="flex:1;">
-            <div style="font-weight:600;color:var(--white);font-size:0.9rem;">Local OSRM (Podman)</div>
-            <div style="font-size:0.75rem;color:var(--white-50);margin-top:2px;">http://localhost:5001</div>
-          </div>
-        </div>
-      </div>
-      
       <div class="backend-option" onclick="selectBackendOption('public')" id="backend-opt-public"
            style="padding:14px;border:2px solid ${isDefaultPublic ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;background:${isDefaultPublic ? 'rgba(91,159,232,0.1)' : 'transparent'};">
         <div style="display:flex;align-items:center;gap:10px;">
@@ -75,6 +64,17 @@ function showBackendSettings() {
           <div style="flex:1;">
             <div style="font-weight:600;color:var(--white);font-size:0.9rem;">OSRM Public Demo</div>
             <div style="font-size:0.75rem;color:var(--white-50);margin-top:2px;">https://router.project-osrm.org</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="backend-option" onclick="selectBackendOption('local')" id="backend-opt-local"
+           style="padding:14px;border:2px solid ${isDefaultLocal ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;background:${isDefaultLocal ? 'rgba(91,159,232,0.1)' : 'transparent'};">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="backend-choice" value="local" ${isDefaultLocal ? 'checked' : ''} style="cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--white);font-size:0.9rem;">Local OSRM (Podman)</div>
+            <div style="font-size:0.75rem;color:var(--white-50);margin-top:2px;">http://localhost:5001</div>
           </div>
         </div>
       </div>
@@ -157,6 +157,8 @@ function showBackendSettings() {
         showToast(`Backend updated to: ${result.value}`, 'success');
         // Re-initialize TD controls for new backend
         initTimeDependentControls();
+        // Validate profile for new backend
+        validateProfileForBackend();
         // Clear any existing route since backend changed
         clearRouteAndWaypoints();
       }

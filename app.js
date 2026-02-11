@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   // Initialize components
   initBackendSettings(); // Initialize backend URL first
   initMap();
-  initRouting();
+  initRouting(); // This validates profile for current backend
   initDebugTools();
   initRouteLabelSelector();
 

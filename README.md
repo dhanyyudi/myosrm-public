@@ -59,8 +59,21 @@ Click the **server icon** (⚙️) in the sidebar header to configure your OSRM 
 The frontend stores backend settings in `localStorage`. Default configuration is in `config.js`:
 
 ```javascript
-osrmBackendUrl: "/api",  // Default backend
+osrmBackendUrl: "https://router.project-osrm.org",  // Public demo (works immediately)
 ```
+
+To use your local OSRM backend, click the **server icon** (⚙️) in the sidebar and select "Local OSRM (Podman)".
+
+### Profile Selection
+
+Available profiles depend on your backend:
+
+| Backend Type | Available Profiles |
+|--------------|-------------------|
+| **Public** | Driving, Walking, Cycling |
+| **Local** | Driving, Truck 18W, Truck 10W, Van, Walking, Cycling |
+
+Click the **profile name** (e.g., "driving") in the sidebar to change profiles.
 
 ## Basemap Options
 

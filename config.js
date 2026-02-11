@@ -1,9 +1,13 @@
 /**
- * Configuration for OSRM Inspector
+ * Configuration for OSRM Inspector - Public Edition
+ * 
+ * Backend can be configured via the settings icon in the sidebar.
+ * Default: Public OSRM demo (works immediately on deployment)
  */
 const CONFIG = {
-  // Backend API URL
-  osrmBackendUrl: "/api",
+  // Backend API URL - defaults to public demo for immediate use
+  // Users can change this via Settings → Backend
+  osrmBackendUrl: "https://router.project-osrm.org",
 
   // Default Map Settings
   map: {
@@ -15,15 +19,31 @@ const CONFIG = {
 
   // Routing Options
   routing: {
+    // Profile mapping: display name → API profile name
+    // Public OSRM only supports: driving, walking, cycling
+    // Local SWAT backend supports custom profiles: truck18w, van, etc.
+    profiles: {
+      public: [
+        { id: "driving", name: "Driving", api: "driving" },
+        { id: "walking", name: "Walking", api: "walking" },
+        { id: "cycling", name: "Cycling", api: "cycling" },
+      ],
+      local: [
+        { id: "driving", name: "Driving", api: "driving" },
+        { id: "truck18w", name: "Truck 18W", api: "driving" },
+        { id: "truck10w", name: "Truck 10W", api: "driving" },
+        { id: "van", name: "Van", api: "driving" },
+        { id: "walking", name: "Walking", api: "walking" },
+        { id: "cycling", name: "Cycling", api: "cycling" },
+      ],
+    },
     colors: {
-      truck18w: "#e74c3c",
       driving: "#3498db",
+      truck18w: "#e74c3c",
+      truck10w: "#f39c12",
+      van: "#9b59b6",
       walking: "#2ecc71",
       cycling: "#9b59b6",
-      van: "#f39c12",
-      van_2022: "#e74c3c",
-      van_scpa: "#1abc9c",
-      truck_staticth: "#8e44ad",
       car: "#27ae60",
     },
 
