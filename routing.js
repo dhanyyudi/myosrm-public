@@ -246,14 +246,48 @@ function rebuildMarkersFromInputs() {
 
 /**
  * Initialize TD controls based on runtime config
+ * Public version: TD only works with local backends
  */
 function initTimeDependentControls() {
   const tdControls = document.getElementById("td-controls");
   const checkbox = document.getElementById("enable-time-routing");
-
+  
+  // Check if using local backend (TD only works locally)
+  const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+  
+  if (!isLocalBackend) {
+    // Public backend - disable TD with info message
+    tdControls.style.display = "";
+    checkbox.checked = false;
+    checkbox.disabled = true;
+    
+    // Add info tooltip
+    const infoTip = document.querySelector('.info-tip[title*="traffic"]');
+    if (infoTip) {
+      infoTip.title = "Time-dependent routing requires local OSRM backend with TD support";
+      infoTip.style.color = "var(--white-30)";
+    }
+    
+    // Disable time input
+    const dtInput = document.getElementById("departure-time");
+    if (dtInput) dtInput.disabled = true;
+    
+    // Add warning label
+    const warningLabel = document.createElement('div');
+    warningLabel.id = 'td-warning';
+    warningLabel.style.cssText = 'font-size:0.7rem;color:var(--orange);margin-top:6px;';
+    warningLabel.innerHTML = '<i class="fa fa-info-circle"></i> TD requires local backend';
+    if (!document.getElementById('td-warning')) {
+      tdControls.appendChild(warningLabel);
+    }
+    return;
+  }
+  
+  // Local backend - enable TD controls
   if (RUNTIME_CONFIG.tdEnabled) {
     tdControls.style.display = "";
     checkbox.checked = true;
+    checkbox.disabled = false;
     setCurrentTimeAsDeparture();
 
     document
@@ -573,9 +607,12 @@ async function findRouteWithMultipleWaypoints() {
       document.getElementById("enable-time-routing").checked;
 
     // Build URL - include 'ways' in annotations to get OSM Way IDs
+    // Note: Public version uses static routing only (TD requires custom backend)
     let url = `${CONFIG.osrmBackendUrl}/route/v1/${profile}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=distance,duration,ways&alternatives=false`;
 
-    if (timeEnabled) {
+    // Only add start_time for local backends (public OSRM doesn't support TD)
+    const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+    if (timeEnabled && isLocalBackend) {
       const dtInput = document.getElementById("departure-time");
       if (dtInput && dtInput.value) {
         const startTime = buildIsoWithTimezone(dtInput.value);
@@ -601,7 +638,8 @@ async function findRouteWithMultipleWaypoints() {
       for (const alt of altProfiles) {
         if (alt === profile) continue;
         let altUrl = `${CONFIG.osrmBackendUrl}/route/v1/${alt}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=distance,duration,ways&alternatives=false`;
-        if (timeEnabled) {
+        const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+        if (timeEnabled && isLocalBackend) {
           const dtInput = document.getElementById("departure-time");
           if (dtInput && dtInput.value) {
             altUrl += `&start_time=${encodeURIComponent(buildIsoWithTimezone(dtInput.value))}`;

@@ -155,6 +155,8 @@ function showBackendSettings() {
       
       if (oldUrl !== result.value) {
         showToast(`Backend updated to: ${result.value}`, 'success');
+        // Re-initialize TD controls for new backend
+        initTimeDependentControls();
         // Clear any existing route since backend changed
         clearRouteAndWaypoints();
       }

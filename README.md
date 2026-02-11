@@ -29,17 +29,23 @@ Open http://localhost:8080
 
 Click the **server icon** (⚙️) in the sidebar header to configure your OSRM backend:
 
-| Backend | URL | Use Case |
-|---------|-----|----------|
-| **Local (Podman)** | `/api` | Your local OSRM instance |
-| **Public Demo** | `https://router.project-osrm.org` | Testing/demo (rate limited) |
-| **Custom** | Any URL | Your own OSRM server |
+| Backend | URL | Use Case | TD Support |
+|---------|-----|----------|------------|
+| **Local (Podman)** | `/api` | Your local OSRM instance | ✅ Yes |
+| **Public Demo** | `https://router.project-osrm.org` | Testing/demo (rate limited) | ❌ No |
+| **Custom** | Any URL | Your own OSRM server | Depends on server |
 
 ### Backend Requirements
 
 - **Local backends**: No CORS configuration needed
 - **Remote backends**: Must have CORS enabled
 - **OSRM version**: Should support `/route/v1/{profile}/{coordinates}` endpoint
+
+### Time-Dependent Routing
+
+Time-dependent (traffic-aware) routing **only works with local backends** that have TD support compiled in. The public OSRM demo does not support TD routing.
+
+When using public backends, the TD controls will be disabled with an info message.
 
 ## Configuration
 
