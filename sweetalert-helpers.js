@@ -2,73 +2,42 @@
  * SweetAlert helper functions for OSRM Inspector
  */
 
-/**
- * Show a simple alert message
- * @param {string} message - The message to display
- * @param {string} title - Optional title for the alert
- */
 function showAlert(message, title = "Information") {
   Swal.fire({
     title: title,
     text: message,
     icon: "info",
-    confirmButtonColor: "#4361ee",
     confirmButtonText: "OK",
   });
 }
 
-/**
- * Show a success message
- * @param {string} message - The message to display
- * @param {string} title - Optional title for the alert
- */
 function showSuccess(message, title = "Success") {
   Swal.fire({
     title: title,
     text: message,
     icon: "success",
-    confirmButtonColor: "#4361ee",
     confirmButtonText: "OK",
   });
 }
 
-/**
- * Show an error message
- * @param {string} message - The error message to display
- * @param {string} title - Optional title for the alert
- */
 function showError(message, title = "Error") {
   Swal.fire({
     title: title,
     text: message,
     icon: "error",
-    confirmButtonColor: "#4361ee",
     confirmButtonText: "OK",
   });
 }
 
-/**
- * Show a warning message
- * @param {string} message - The warning message to display
- * @param {string} title - Optional title for the alert
- */
 function showWarning(message, title = "Warning") {
   Swal.fire({
     title: title,
     text: message,
     icon: "warning",
-    confirmButtonColor: "#4361ee",
     confirmButtonText: "OK",
   });
 }
 
-/**
- * Show a confirmation dialog with Yes/No options
- * @param {string} message - The confirmation message
- * @param {string} title - Optional title for the confirmation
- * @param {Function} onConfirm - Callback function to execute on confirmation
- * @param {Function} onCancel - Optional callback function to execute on cancel
- */
 function showConfirmation(
   message,
   title = "Confirmation",
@@ -80,8 +49,6 @@ function showConfirmation(
     text: message,
     icon: "question",
     showCancelButton: true,
-    confirmButtonColor: "#4361ee",
-    cancelButtonColor: "#6c757d",
     confirmButtonText: "Yes",
     cancelButtonText: "No",
   }).then((result) => {
@@ -96,13 +63,6 @@ function showConfirmation(
   });
 }
 
-/**
- * Show an input dialog to get text from the user
- * @param {string} message - The prompt message
- * @param {string} title - Optional title for the prompt
- * @param {string} defaultValue - Optional default value for the input
- * @param {Function} onConfirm - Callback function that receives the input value
- */
 function showPrompt(message, title = "Input", defaultValue = "", onConfirm) {
   Swal.fire({
     title: title,
@@ -110,8 +70,6 @@ function showPrompt(message, title = "Input", defaultValue = "", onConfirm) {
     input: "text",
     inputValue: defaultValue,
     showCancelButton: true,
-    confirmButtonColor: "#4361ee",
-    cancelButtonColor: "#6c757d",
     confirmButtonText: "OK",
     cancelButtonText: "Cancel",
     inputValidator: (value) => {
@@ -126,14 +84,7 @@ function showPrompt(message, title = "Input", defaultValue = "", onConfirm) {
   });
 }
 
-/**
- * Show a custom dialog for editing profile
- * @param {Array} profiles - Array of available profiles
- * @param {string} currentProfile - Current selected profile
- * @param {Function} onSave - Callback function when profile is saved
- */
 function showProfileEditor(profiles, currentProfile, onSave) {
-  // Create HTML content for the profile editor
   let html = `
     <select id="swal-profile-select" class="swal2-select" style="width:100%; margin-bottom:15px;">
       <option value="custom">Custom profile...</option>
@@ -155,12 +106,9 @@ function showProfileEditor(profiles, currentProfile, onSave) {
     title: "Edit Profile",
     html: html,
     showCancelButton: true,
-    confirmButtonColor: "#4361ee",
-    cancelButtonColor: "#6c757d",
     confirmButtonText: "Save",
     cancelButtonText: "Cancel",
     didOpen: () => {
-      // Set up event listener for the select dropdown
       const selectElement = document.getElementById("swal-profile-select");
       const customContainer = document.getElementById(
         "swal-custom-profile-container"
@@ -176,7 +124,6 @@ function showProfileEditor(profiles, currentProfile, onSave) {
         }
       });
 
-      // Initialize display
       if (selectElement.value === "custom") {
         customContainer.style.display = "block";
       }
@@ -204,33 +151,12 @@ function showProfileEditor(profiles, currentProfile, onSave) {
   });
 }
 
-/**
- * Show a loading indicator
- * @param {string} message - The loading message to display
- * @returns {Object} - SweetAlert instance that can be used to close the dialog
- */
-function showLoading(message = "Processing...") {
-  return Swal.fire({
-    title: message,
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    },
-  });
-}
-
-/**
- * Show a custom dialog for entering and loading a URL
- * @param {Function} onConfirm - Callback function when URL is confirmed
- */
 function showUrlPrompt(onConfirm) {
   Swal.fire({
     title: "Enter OSRM routing URL",
     input: "text",
     inputPlaceholder: "http://localhost:9966/api/route/v1/...",
     showCancelButton: true,
-    confirmButtonColor: "#4361ee",
-    cancelButtonColor: "#6c757d",
     confirmButtonText: "Load",
     cancelButtonText: "Cancel",
     inputValidator: (value) => {
@@ -248,11 +174,6 @@ function showUrlPrompt(onConfirm) {
   });
 }
 
-/**
- * Toast notification - shows a small notification at the corner of the screen
- * @param {string} message - The message to display
- * @param {string} icon - Icon type: success, error, warning, info, question
- */
 function showToast(message, icon = "success") {
   const Toast = Swal.mixin({
     toast: true,

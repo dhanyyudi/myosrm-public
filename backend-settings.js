@@ -1,321 +1,221 @@
 /**
- * Module for managing backend configuration
+ * Backend Settings Module - Configure OSRM Backend URL
+ * Stores settings in localStorage for persistence
  */
+
+// Default backends
+const DEFAULT_BACKENDS = {
+  local: {
+    name: "Local OSRM (Podman)",
+    url: "/api",
+    description: "Local OSRM instance running via Podman",
+  },
+  public: {
+    name: "OSRM Public Demo",
+    url: "https://router.project-osrm.org",
+    description: "Public OSRM demo server (rate limited)",
+  },
+};
+
+// Storage key
+const BACKEND_STORAGE_KEY = "osrm_backend_url";
 
 /**
- * Initialize backend settings
+ * Get current backend URL from localStorage or default
  */
-function initBackendSettings() {
-  // Add menu item for backend settings
-  addBackendSettingsMenuItem();
-
-  // Add handlers for connection status
-  setupBackendStatusIndicator();
-
-  // Check backend connection
-  checkBackendConnection();
+function getBackendUrl() {
+  const stored = localStorage.getItem(BACKEND_STORAGE_KEY);
+  return stored || DEFAULT_BACKENDS.local.url;
 }
 
 /**
- * Add menu item for backend settings
+ * Set backend URL
  */
-function addBackendSettingsMenuItem() {
-  // Get sidebar header
-  const sidebarHeader = document.querySelector(".sidebar-header");
-
-  // Create settings button
-  const settingsButton = document.createElement("button");
-  settingsButton.id = "btn-backend-settings";
-  settingsButton.className = "btn-header-icon";
-  settingsButton.innerHTML = '<i class="fa fa-cog"></i>';
-  settingsButton.title = "Backend Settings";
-
-  // Add event listener
-  settingsButton.addEventListener("click", showBackendSettingsDialog);
-
-  // Add to sidebar header
-  sidebarHeader.appendChild(settingsButton);
-
-  // Add backend status indicator
-  const statusIndicator = document.createElement("div");
-  statusIndicator.id = "backend-status-indicator";
-  statusIndicator.className = "backend-status unknown";
-  statusIndicator.title = "Backend status: Checking...";
-
-  // Add to sidebar header
-  sidebarHeader.appendChild(statusIndicator);
+function setBackendUrl(url) {
+  localStorage.setItem(BACKEND_STORAGE_KEY, url);
+  // Update CONFIG immediately
+  CONFIG.osrmBackendUrl = url;
+  console.log("Backend URL updated to:", url);
 }
 
 /**
- * Set up backend status indicator
+ * Reset to default backend
  */
-function setupBackendStatusIndicator() {
-  // Check backend status every 30 seconds
-  setInterval(checkBackendConnection, 30000);
-
-  // Add event listener for clicks on the indicator
-  const indicator = document.getElementById("backend-status-indicator");
-  if (indicator) {
-    indicator.addEventListener("click", function () {
-      checkBackendConnection(true); // Force check
-    });
-  }
+function resetBackendUrl() {
+  localStorage.removeItem(BACKEND_STORAGE_KEY);
+  CONFIG.osrmBackendUrl = DEFAULT_BACKENDS.local.url;
 }
 
 /**
- * Check connection to backend
- * @param {boolean} showFeedback - Whether to show feedback to user
+ * Show Backend Settings Modal
  */
-async function checkBackendConnection(showFeedback = false) {
-  if (showFeedback) {
-    showToast("Checking backend connection...", "info");
-  }
+function showBackendSettings() {
+  const currentUrl = getBackendUrl();
+  const isDefaultLocal = currentUrl === DEFAULT_BACKENDS.local.url;
+  const isDefaultPublic = currentUrl === DEFAULT_BACKENDS.public.url;
+  const isCustom = !isDefaultLocal && !isDefaultPublic;
 
-  const indicator = document.getElementById("backend-status-indicator");
-
-  try {
-    // Change to 'checking' state
-    indicator.className = "backend-status checking";
-    indicator.title = "Backend status: Checking...";
-
-    // Try to access backend status endpoint
-    const url = `${CONFIG.osrmBackendUrl}/status`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      // Backend responded correctly
-      indicator.className = "backend-status connected";
-      indicator.title = "Backend status: Connected";
-
-      // Get backend status information
-      const data = await response.json();
-      if (data && data.profile) {
-        indicator.title = `Backend connected: ${data.profile} profile`;
-      }
-
-      if (showFeedback) {
-        showToast("Backend connection successful!", "success");
-      }
-
-      return true;
-    } else {
-      // Backend responded but with an error
-      indicator.className = "backend-status error";
-      indicator.title = `Backend error: HTTP ${response.status}`;
-
-      if (showFeedback) {
-        showError(`Backend error: HTTP ${response.status}`);
-      }
-
-      return false;
-    }
-  } catch (error) {
-    // Cannot connect to backend
-    indicator.className = "backend-status disconnected";
-    indicator.title = `Backend disconnected: ${error.message}`;
-
-    if (showFeedback) {
-      showError(`Backend connection failed: ${error.message}`);
-    }
-
-    return false;
-  }
-}
-
-/**
- * Display backend settings dialog
- */
-function showBackendSettingsDialog() {
-  // Get current backend URL
-  const currentUrl = CONFIG.osrmBackendUrl;
-
-  // Check if using default URL
-  const isDefaultUrl = currentUrl === "https://api.myosrm.my.id";
-
-  // Custom CSS for dialog
-  const customStyles = `
-      <style>
-        .backend-option {
-          display: flex;
-          margin-bottom: 12px;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          background-color: #f9f9f9;
-        }
-        .backend-option:hover {
-          background-color: #f0f0f0;
-        }
-        .backend-option input[type="radio"] {
-          margin-right: 10px;
-        }
-        .backend-option-content {
-          flex: 1;
-        }
-        .backend-option-title {
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .backend-option-desc {
-          font-size: 12px;
-          color: #666;
-        }
-        #custom-backend-container {
-          margin-top: 15px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-radius: 6px;
-          border: 1px solid #ddd;
-          transition: all 0.3s ease;
-        }
-        #backend-url-input {
-          width: 100%;
-          padding: 10px;
-          margin-top: 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-        .backend-examples {
-          font-size: 11px;
-          color: #666;
-          margin-top: 8px;
-        }
-        .backend-note {
-          padding: 10px;
-          background-color: #fff9e6;
-          border-left: 3px solid #f39c12;
-          margin-top: 15px;
-          font-size: 12px;
-        }
-      </style>
-    `;
-
-  // Create HTML for dialog
   const html = `
-      ${customStyles}
-      <div class="backend-options">
-        <div class="backend-option">
-          <input type="radio" id="backend-default" name="backend-type" value="default" ${
-            isDefaultUrl ? "checked" : ""
-          }>
-          <div class="backend-option-content">
-            <div class="backend-option-title">Default OSRM Backend (Cloudflare Tunnel)</div>
-            <div class="backend-option-desc">Use the OSRM backend hosted at api.myosrm.my.id via Cloudflare Tunnel.</div>
+    <div style="text-align:left;">
+      <div class="backend-option" onclick="selectBackendOption('local')" id="backend-opt-local"
+           style="padding:14px;border:2px solid ${isDefaultLocal ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;background:${isDefaultLocal ? 'rgba(91,159,232,0.1)' : 'transparent'};">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="backend-choice" value="local" ${isDefaultLocal ? 'checked' : ''} style="cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--white);font-size:0.9rem;">Local OSRM (Podman)</div>
+            <div style="font-size:0.75rem;color:var(--white-50);margin-top:2px;">http://localhost:5001</div>
           </div>
-        </div>
-        
-        <div class="backend-option">
-          <input type="radio" id="backend-custom" name="backend-type" value="custom" ${
-            !isDefaultUrl ? "checked" : ""
-          }>
-          <div class="backend-option-content">
-            <div class="backend-option-title">Custom Backend URL</div>
-            <div class="backend-option-desc">Connect to an OSRM backend at a custom URL (local or remote).</div>
-          </div>
-        </div>
-        
-        <div id="custom-backend-container" style="${
-          !isDefaultUrl ? "" : "opacity: 0.5;"
-        }">
-          <label for="backend-url-input">Custom Backend URL:</label>
-          <input type="text" id="backend-url-input" placeholder="https://router.project-osrm.org" value="${
-            !isDefaultUrl ? currentUrl : ""
-          }">
-          <div class="backend-examples">
-            Examples:<br>
-            - https://router.project-osrm.org<br>
-            - http://localhost:5000
-          </div>
-        </div>
-        
-        <div class="backend-note">
-          <i class="fa fa-info-circle"></i> Changing the backend will affect all routing features. Remote backends require properly configured CORS.
         </div>
       </div>
-    `;
+      
+      <div class="backend-option" onclick="selectBackendOption('public')" id="backend-opt-public"
+           style="padding:14px;border:2px solid ${isDefaultPublic ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;background:${isDefaultPublic ? 'rgba(91,159,232,0.1)' : 'transparent'};">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="backend-choice" value="public" ${isDefaultPublic ? 'checked' : ''} style="cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--white);font-size:0.9rem;">OSRM Public Demo</div>
+            <div style="font-size:0.75rem;color:var(--white-50);margin-top:2px;">https://router.project-osrm.org</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="backend-option" onclick="selectBackendOption('custom')" id="backend-opt-custom"
+           style="padding:14px;border:2px solid ${isCustom ? 'var(--accent)' : 'var(--glass-border)'};border-radius:10px;cursor:pointer;transition:all 0.2s;background:${isCustom ? 'rgba(91,159,232,0.1)' : 'transparent'};">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="radio" name="backend-choice" value="custom" ${isCustom ? 'checked' : ''} style="cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--white);font-size:0.9rem;">Custom Backend URL</div>
+            <input type="text" id="custom-backend-url" placeholder="https://your-osrm-server.com"
+                   value="${isCustom ? currentUrl : ''}"
+                   style="width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--glass-border);border-radius:6px;background:rgba(0,0,0,0.2);color:var(--white);font-size:0.8rem;font-family:var(--font-mono);"
+                   onclick="event.stopPropagation();selectBackendOption('custom');">
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top:14px;padding:10px;background:rgba(255,193,7,0.1);border-left:3px solid var(--orange);border-radius:4px;">
+        <div style="font-size:0.75rem;color:var(--white-70);">
+          <i class="fa fa-info-circle" style="color:var(--orange);margin-right:4px;"></i>
+          Remote backends require CORS enabled. Local backends work without configuration.
+        </div>
+      </div>
+    </div>
+  `;
 
-  // Show SweetAlert dialog
   Swal.fire({
     title: "Backend Settings",
     html: html,
-    width: 600,
     showCancelButton: true,
     confirmButtonText: "Save Changes",
     cancelButtonText: "Cancel",
+    width: 480,
     didOpen: () => {
-      // Add event listeners for radio buttons
-      const defaultRadio = document.getElementById("backend-default");
-      const customRadio = document.getElementById("backend-custom");
-      const customContainer = document.getElementById(
-        "custom-backend-container"
-      );
-
-      defaultRadio.addEventListener("change", function () {
-        customContainer.style.opacity = "0.5";
-      });
-
-      customRadio.addEventListener("change", function () {
-        customContainer.style.opacity = "1.0";
+      // Add hover effects
+      document.querySelectorAll('.backend-option').forEach(el => {
+        el.addEventListener('mouseenter', function() {
+          if (!this.querySelector('input').checked) {
+            this.style.borderColor = 'var(--glass-border-strong)';
+            this.style.background = 'var(--white-08)';
+          }
+        });
+        el.addEventListener('mouseleave', function() {
+          if (!this.querySelector('input').checked) {
+            this.style.borderColor = 'var(--glass-border)';
+            this.style.background = 'transparent';
+          }
+        });
       });
     },
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Get selected backend type
-      const defaultRadio = document.getElementById("backend-default");
-      const backendUrlInput = document.getElementById("backend-url-input");
-
-      // Set new backend URL based on selection
-      let newBackendUrl;
-      if (defaultRadio.checked) {
-        newBackendUrl = "https://api.myosrm.my.id";
-      } else {
-        newBackendUrl = backendUrlInput.value.trim();
-
-        // Validate URL
-        if (!newBackendUrl) {
-          showError("Backend URL cannot be empty");
-          return;
+    preConfirm: () => {
+      const selected = document.querySelector('input[name="backend-choice"]:checked').value;
+      let newUrl;
+      
+      if (selected === 'local') {
+        newUrl = DEFAULT_BACKENDS.local.url;
+      } else if (selected === 'public') {
+        newUrl = DEFAULT_BACKENDS.public.url;
+      } else if (selected === 'custom') {
+        newUrl = document.getElementById('custom-backend-url').value.trim();
+        if (!newUrl) {
+          Swal.showValidationMessage('Please enter a custom backend URL');
+          return false;
         }
-
-        // Ensure URL starts with http:// or https://
-        if (
-          !newBackendUrl.startsWith("http://") &&
-          !newBackendUrl.startsWith("https://")
-        ) {
-          showError("Backend URL must start with http:// or https://");
-          return;
-        }
-
-        // Auto-correct public OSRM server to HTTPS to avoid mixed content
-        if (newBackendUrl === "http://router.project-osrm.org" || 
-            newBackendUrl === "http://router.project-osrm.org/") {
-          newBackendUrl = "https://router.project-osrm.org";
-          console.log("Auto-corrected OSRM server URL to HTTPS to avoid mixed content issues");
-        }
-
-        // Warn about mixed content if using HTTP on HTTPS page
-        if (newBackendUrl.startsWith("http://") && window.location.protocol === "https:") {
-          showWarning("Using HTTP backend on HTTPS page may cause mixed content blocking. Consider using HTTPS for the backend.");
+        // Add https:// if no protocol specified
+        if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) {
+          newUrl = 'https://' + newUrl;
         }
       }
-
-      // Save in localStorage
-      localStorage.setItem("osrmBackendUrl", newBackendUrl);
-
-      // Show confirmation and reload page
-      Swal.fire({
-        title: "Backend Updated",
-        text: "Backend settings have been saved. The page will reload to apply changes.",
-        icon: "success",
-        confirmButtonText: "Reload Now",
-      }).then(() => {
-        window.location.reload();
-      });
+      
+      return newUrl;
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      const oldUrl = getBackendUrl();
+      setBackendUrl(result.value);
+      
+      if (oldUrl !== result.value) {
+        showToast(`Backend updated to: ${result.value}`, 'success');
+        // Clear any existing route since backend changed
+        clearRouteAndWaypoints();
+      }
     }
   });
+}
+
+/**
+ * Select backend option in modal
+ */
+function selectBackendOption(option) {
+  document.querySelectorAll('input[name="backend-choice"]').forEach(radio => {
+    radio.checked = radio.value === option;
+  });
+  
+  // Update visual selection
+  document.querySelectorAll('.backend-option').forEach(el => {
+    el.style.borderColor = 'var(--glass-border)';
+    el.style.background = 'transparent';
+  });
+  
+  const selectedEl = document.getElementById(`backend-opt-${option}`);
+  if (selectedEl) {
+    selectedEl.style.borderColor = 'var(--accent)';
+    selectedEl.style.background = 'rgba(91,159,232,0.1)';
+  }
+  
+  // Focus custom input if selected
+  if (option === 'custom') {
+    document.getElementById('custom-backend-url').focus();
+  }
+}
+
+/**
+ * Initialize backend settings on app load
+ */
+function initBackendSettings() {
+  // Load stored backend URL
+  const backendUrl = getBackendUrl();
+  CONFIG.osrmBackendUrl = backendUrl;
+  console.log("Using OSRM backend:", backendUrl);
+  
+  // Add backend button to sidebar header
+  const sidebarHeader = document.querySelector('.sidebar-header');
+  if (sidebarHeader && !document.getElementById('btn-backend-settings')) {
+    const btn = document.createElement('button');
+    btn.id = 'btn-backend-settings';
+    btn.className = 'btn-icon-sm';
+    btn.innerHTML = '<i class="fa fa-server"></i>';
+    btn.title = 'Backend Settings';
+    btn.style.cssText = 'margin-left:auto;width:32px;height:32px;';
+    btn.onclick = showBackendSettings;
+    sidebarHeader.appendChild(btn);
+  }
+}
+
+/**
+ * Get backend display name for UI
+ */
+function getBackendDisplayName(url) {
+  if (url === DEFAULT_BACKENDS.local.url) return 'Local (Podman)';
+  if (url === DEFAULT_BACKENDS.public.url) return 'Public Demo';
+  return url.replace(/^https?:\/\//, '');
 }
