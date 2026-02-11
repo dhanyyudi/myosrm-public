@@ -64,6 +64,9 @@ async function initRouting() {
   // Add routing URL display
   addRoutingUrlDisplay();
 
+  // Check for mixed content issues
+  checkMixedContent();
+
   console.log("Routing module initialized with all enhancements");
 }
 
@@ -345,6 +348,33 @@ async function getCurrentProfile() {
   } catch (error) {
     console.error("Error fetching current profile:", error);
     return "truck_staticth"; // Default profile on error
+  }
+}
+
+/**
+ * Check for mixed content issues (HTTP backend on HTTPS page)
+ */
+function checkMixedContent() {
+  const backendUrl = CONFIG.osrmBackendUrl;
+  const isHttpBackend = backendUrl.startsWith("http://");
+  const isHttpsPage = window.location.protocol === "https:";
+
+  if (isHttpBackend && isHttpsPage) {
+    const message = `⚠️ Mixed Content Warning: Your page is loaded over HTTPS but the backend (${backendUrl}) uses HTTP. Browsers block this for security. Please use an HTTPS backend URL.`;
+    console.warn(message);
+    
+    // Auto-correct for the public OSRM server
+    if (backendUrl.includes("router.project-osrm.org")) {
+      const correctedUrl = backendUrl.replace("http://", "https://");
+      console.log(`💡 Tip: Try using ${correctedUrl} instead`);
+      
+      // Optionally auto-correct
+      CONFIG.osrmBackendUrl = correctedUrl;
+      localStorage.setItem("osrmBackendUrl", correctedUrl);
+      showToast("Auto-corrected OSRM backend to HTTPS", "info");
+    } else {
+      showToast("Warning: HTTP backend on HTTPS page may not work. Check console.", "warning");
+    }
   }
 }
 

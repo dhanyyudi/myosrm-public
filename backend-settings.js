@@ -223,12 +223,12 @@ function showBackendSettingsDialog() {
           !isDefaultUrl ? "" : "opacity: 0.5;"
         }">
           <label for="backend-url-input">Custom Backend URL:</label>
-          <input type="text" id="backend-url-input" placeholder="http://router.project-osrm.org" value="${
+          <input type="text" id="backend-url-input" placeholder="https://router.project-osrm.org" value="${
             !isDefaultUrl ? currentUrl : ""
           }">
           <div class="backend-examples">
             Examples:<br>
-            - http://router.project-osrm.org<br>
+            - https://router.project-osrm.org<br>
             - http://localhost:5000
           </div>
         </div>
@@ -289,6 +289,18 @@ function showBackendSettingsDialog() {
         ) {
           showError("Backend URL must start with http:// or https://");
           return;
+        }
+
+        // Auto-correct public OSRM server to HTTPS to avoid mixed content
+        if (newBackendUrl === "http://router.project-osrm.org" || 
+            newBackendUrl === "http://router.project-osrm.org/") {
+          newBackendUrl = "https://router.project-osrm.org";
+          console.log("Auto-corrected OSRM server URL to HTTPS to avoid mixed content issues");
+        }
+
+        // Warn about mixed content if using HTTP on HTTPS page
+        if (newBackendUrl.startsWith("http://") && window.location.protocol === "https:") {
+          showWarning("Using HTTP backend on HTTPS page may cause mixed content blocking. Consider using HTTPS for the backend.");
         }
       }
 
