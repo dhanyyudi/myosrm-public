@@ -606,12 +606,14 @@ async function findRouteWithMultipleWaypoints() {
       document.getElementById("enable-time-routing") &&
       document.getElementById("enable-time-routing").checked;
 
-    // Build URL - include 'ways' in annotations to get OSM Way IDs
-    // Note: Public version uses static routing only (TD requires custom backend)
-    let url = `${CONFIG.osrmBackendUrl}/route/v1/${profile}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=distance,duration,ways&alternatives=false`;
+    // Build URL - use standard annotations for public backends
+    const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+    
+    // Local backends support 'ways' annotation, public backends use standard 'true'
+    const annotationsParam = isLocalBackend ? 'distance,duration,ways' : 'true';
+    let url = `${CONFIG.osrmBackendUrl}/route/v1/${profile}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=${annotationsParam}&alternatives=false`;
 
     // Only add start_time for local backends (public OSRM doesn't support TD)
-    const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
     if (timeEnabled && isLocalBackend) {
       const dtInput = document.getElementById("departure-time");
       if (dtInput && dtInput.value) {
@@ -637,8 +639,8 @@ async function findRouteWithMultipleWaypoints() {
       const altProfiles = ["driving", "cycling", "walking"];
       for (const alt of altProfiles) {
         if (alt === profile) continue;
-        let altUrl = `${CONFIG.osrmBackendUrl}/route/v1/${alt}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=distance,duration,ways&alternatives=false`;
-        const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+        const annotationsParam = isLocalBackend ? 'distance,duration,ways' : 'true';
+        let altUrl = `${CONFIG.osrmBackendUrl}/route/v1/${alt}/${waypointsString}?overview=full&geometries=geojson&steps=true&annotations=${annotationsParam}&alternatives=false`;
         if (timeEnabled && isLocalBackend) {
           const dtInput = document.getElementById("departure-time");
           if (dtInput && dtInput.value) {
@@ -852,10 +854,13 @@ function displayWaypointsTab() {
 }
 
 /**
- * Populate Way IDs tab from route annotation (using 'ways' from OSRM response)
+ * Populate Way IDs tab from route annotation
+ * Note: 'ways' annotation only available on local SWAT backend
  */
 function displayWayIdsTab(route) {
   const el = document.getElementById("way-ids-table");
+  const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
+  
   if (!route || !route.legs) {
     el.innerHTML = "<p>No way ID data.</p>";
     return;
@@ -864,7 +869,7 @@ function displayWayIdsTab(route) {
   const wayIds = [];
   route.legs.forEach((leg) => {
     if (leg.annotation && leg.annotation.ways) {
-      // Use 'ways' array from OSRM annotation (OSM Way IDs)
+      // Use 'ways' array from OSRM annotation (OSM Way IDs) - only on local backend
       leg.annotation.ways.forEach((w) => {
         if (!wayIds.includes(w)) wayIds.push(w);
       });
@@ -872,7 +877,11 @@ function displayWayIdsTab(route) {
   });
 
   if (wayIds.length === 0) {
-    el.innerHTML = "<p>No annotation way data available. Ensure OSRM backend supports 'ways' annotation.</p>";
+    if (!isLocalBackend) {
+      el.innerHTML = "<p>Way ID data not available with public OSRM backend.<br>Use local backend for way-level details.</p>";
+    } else {
+      el.innerHTML = "<p>No annotation way data available.</p>";
+    }
     return;
   }
 
@@ -1007,6 +1016,7 @@ function showWaypointsModal() {
 
 /**
  * Show Way IDs modal with CSV export
+ * Note: 'ways' annotation only available on local SWAT backend
  */
 function showWayIdsModal() {
   if (!currentRouteData || !currentRouteData.routes || !currentRouteData.routes[0]) {
@@ -1015,10 +1025,12 @@ function showWayIdsModal() {
   }
 
   const route = currentRouteData.routes[0];
+  const isLocalBackend = CONFIG.osrmBackendUrl === '/api' || CONFIG.osrmBackendUrl.includes('localhost');
   const wayIds = [];
+  
   if (route.legs) {
     route.legs.forEach((leg) => {
-      // Use 'ways' from annotation (OSM Way IDs from custom OSRM backend)
+      // Use 'ways' from annotation (OSM Way IDs) - only on local backend
       if (leg.annotation && leg.annotation.ways) {
         leg.annotation.ways.forEach((w) => {
           if (!wayIds.includes(w)) wayIds.push(w);
@@ -1028,7 +1040,11 @@ function showWayIdsModal() {
   }
 
   if (wayIds.length === 0) {
-    showWarning("No Way ID data available. Ensure OSRM backend supports 'ways' annotation.");
+    if (!isLocalBackend) {
+      showWarning("Way ID data not available with public OSRM backend. Use local backend for way-level details.");
+    } else {
+      showWarning("No Way ID data available.");
+    }
     return;
   }
 

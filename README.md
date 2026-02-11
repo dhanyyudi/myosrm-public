@@ -29,11 +29,11 @@ Open http://localhost:8080
 
 Click the **server icon** (⚙️) in the sidebar header to configure your OSRM backend:
 
-| Backend | URL | Use Case | TD Support |
-|---------|-----|----------|------------|
-| **Local (Podman)** | `/api` | Your local OSRM instance | ✅ Yes |
-| **Public Demo** | `https://router.project-osrm.org` | Testing/demo (rate limited) | ❌ No |
-| **Custom** | Any URL | Your own OSRM server | Depends on server |
+| Backend | URL | Use Case | TD Support | Way IDs |
+|---------|-----|----------|------------|---------|
+| **Local (Podman)** | `/api` | Your local OSRM instance | ✅ Yes | ✅ Yes |
+| **Public Demo** | `https://router.project-osrm.org` | Testing/demo (rate limited) | ❌ No | ❌ No |
+| **Custom** | Any URL | Your own OSRM server | Depends on server | Depends on server |
 
 ### Backend Requirements
 
@@ -41,11 +41,18 @@ Click the **server icon** (⚙️) in the sidebar header to configure your OSRM 
 - **Remote backends**: Must have CORS enabled
 - **OSRM version**: Should support `/route/v1/{profile}/{coordinates}` endpoint
 
-### Time-Dependent Routing
+### Feature Compatibility by Backend
 
-Time-dependent (traffic-aware) routing **only works with local backends** that have TD support compiled in. The public OSRM demo does not support TD routing.
+| Feature | Local Backend | Public Backend |
+|---------|--------------|----------------|
+| Basic routing | ✅ | ✅ |
+| Multi-waypoint | ✅ | ✅ |
+| Turn-by-turn directions | ✅ | ✅ |
+| Time-dependent routing | ✅ | ❌ |
+| Way ID export | ✅ | ❌ |
+| Standard annotations | ✅ | ✅ |
 
-When using public backends, the TD controls will be disabled with an info message.
+**Note:** Way ID export requires the `ways` annotation which is only available on custom OSRM backends (like the SWAT local backend). Public OSRM servers use standard annotations only.
 
 ## Configuration
 
